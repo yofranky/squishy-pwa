@@ -43,14 +43,14 @@
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; user-select:none; -webkit-touch-callout:none; -webkit-user-drag:none; }
   html,body{
-    margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+    margin:0; padding:0; width:100%; height:100%; height:100dvh; overflow:hidden;
     position:fixed; touch-action:none;
     font-family: var(--body-font);
     color:var(--ink);
     background:#9be0ff;
     transition:filter .5s ease;
   }
-  #app{ width:100%; height:100%; position:relative; }
+  #app{ width:100%; height:100%; height:100dvh; position:relative; }
 
   /* ---------- SPLASH ---------- */
   #splash{
@@ -918,8 +918,11 @@ class GameEngine{
   }
 
   // Renders one jelly bubble: soft circle body, gloss highlight, and a pair of
-  // eyes whose pupils track the last touch point. Continuously squashes/stretches
-  // ("dances") on a per-cell phase, plus an extra squash bounce right after locking.
+  // eyes whose pupils track the last touch point. Locked/resting jellies get a
+  // real happy hop-and-squash — like they're bouncing in place waiting for the
+  // next piece to join them — while the actively-falling piece gets a gentler
+  // squash only (a vertical hop would fight the piece's real gravity motion
+  // and look glitchy). Plus an extra squash bounce right after landing.
   drawBlock(x,y,color,outlineOnly,lockedAt){
     const ctx=this.ctx, s=this.blockSize;
     const cx = x*s + s/2, cy = y*s + s/2;
@@ -929,23 +932,36 @@ class GameEngine{
     const now = performance.now();
     const phase = ((x*7 + y*13) % 20) / 20 * Math.PI * 2; // stable per-cell "randomness"
 
-    let sx = 1, sy = 1;
+    let sx = 1, sy = 1, hopOffset = 0;
     if(!reduceMotion){
-      const idle = Math.sin(now/450 + phase);
-      sx = 1 + idle*0.05;
-      sy = 1 - idle*0.05;
-      if(lockedAt){
+      if(lockedAt !== null && lockedAt !== undefined){
+        // Resting jelly: continuous happy hop. hop goes 0 (grounded) -> 1 (peak)
+        // and back, twice as fast as a plain sine so it reads as a bounce, not a sway.
+        const t = now/620 + phase;
+        const hop = Math.abs(Math.sin(t));
+        const squash = 1 - hop;               // squashes flat right at ground contact
+        sx = 1 + squash*0.24;
+        sy = 1 - squash*0.24 + hop*0.08;       // slight stretch tall at the peak too
+        hopOffset = -hop * r * 0.36;
+
+        // extra landing squash bounce right when a piece locks, layered on top
         const dt = now - lockedAt;
         if(dt < 260){
-          const t = dt/260;
-          const impact = (1-t) * Math.sin(t*Math.PI);
+          const tt = dt/260;
+          const impact = (1-tt) * Math.sin(tt*Math.PI);
           sx += impact*0.22;
           sy -= impact*0.22;
         }
+      } else {
+        // Falling piece: gentle squash only, no vertical hop
+        const idle = Math.sin(now/450 + phase);
+        sx = 1 + idle*0.05;
+        sy = 1 - idle*0.05;
       }
     }
 
     ctx.save();
+    ctx.translate(0, hopOffset);
     ctx.translate(cx,cy);
     ctx.scale(sx,sy);
     ctx.translate(-cx,-cy);
