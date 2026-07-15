@@ -1,70 +1,48 @@
 # Squishy — Stack & Squish! 🫧
 
-A colorful jelly-bubble stacking game — Blocky's engine, restyled — built as an installable
-Progressive Web App (PWA). Made by **BKAOS**.
+Squishy is a vibrant jelly-bubble stacking game built as an installable Progressive Web App (PWA). This project serves as a showcase for modular game design, utilizing the core engine developed for my previous projects while introducing a completely new visual identity.
 
-**[▶️ Play it live](#)** — *(add your GitHub Pages link here once deployed)*
-
-## What it is
-
-Same core mechanics as Blocky (grid, gravity, line clears, 7 color palettes, Shape KAOS
-difficulty decks, full accessibility panel), with one deliberate visual swap: every falling
-and locked piece is a soft jelly bubble instead of a square block.
-
-- Each bubble has a pair of eyes (white sclera, black pupil, no mouth) that track wherever
-  you're touching the screen — before you touch, they default to looking up
-- Every bubble has a continuous idle squash/stretch "dance" wobble, plus an extra squash
-  bounce right when a piece lands
-- Reduce Motion turns the wobble/bounce off but keeps the eye-tracking, so it stays accessible
-- Colorblind-safe palette, high contrast, large UI, sound, and haptics — all independently
-  toggleable, same as Blocky
-
-## Why it's built this way
-
-This is a BKAOS project, so:
-- **Zero network calls.** No analytics, no ad SDKs, no font CDNs, no accounts. Built clean
-  from the start — no CDN font dependency ever existed here, unlike Blocky's original build.
-- **Installable, not app-store-gated.** It's a PWA: open the link, "Add to Home Screen" on
-  iOS or Android, and it runs full-screen like a native app, offline, with its own icon.
-
-## Tech stack
-
-Vanilla HTML/CSS/JS, `<canvas>` for rendering, Web Audio API for sound, the Vibration API for
-haptics, a hand-written service worker for offline caching. No frameworks, no build step,
-no dependencies.
-
-## Running it locally
-
-```bash
-npx serve .
-# then open the printed localhost URL
-```
-Opening `index.html` directly via `file://` works for gameplay, but the service worker
-(offline support / installability) needs `http(s)://` — a browser security rule, not a bug.
-
-## Deploying (GitHub Pages)
-
-1. Push this folder to a GitHub repo.
-2. Repo Settings → Pages → deploy from the `main` branch, root folder.
-3. Live URL: `https://<username>.github.io/<repo>/`.
-4. Visit on your phone → browser menu → "Add to Home Screen".
-
-## What I learned building this
-
-- Reworking a shared rendering function (`drawBlock`) to swap an entire visual identity
-  (squares → jelly bubbles with faces) while leaving every underlying game system —
-  collision, scoring, line-clear logic — completely untouched.
-- Converting screen-space touch coordinates into canvas-internal pixel coordinates so
-  in-game eyes can accurately track a finger regardless of CSS scaling or device pixel ratio.
-- Using a stable per-cell pseudo-random phase (derived from grid x/y) so every bubble's idle
-  animation looks independent rather than obviously synchronized.
-- Reusing the exact PWA conversion process (manifest, icons, service worker) across three
-  separate games, proving it's a repeatable studio process and not a one-off.
-
-## Project status
-
-See `FUTURE_IDEAS.md` for parked feature ideas. This build is intentionally scoped to be
-**finished** — playable, installable, documented — before anything new gets added.
+**[Play It Live](https://yofranky.github.io/squishy-pwa/)**
 
 ---
-*Squishy is made by BKAOS.*
+
+## The Experience
+
+The game centers on a grid-based stacking mechanic where every piece is reimagined as a soft, animated jelly bubble. The goal is to stack and clear lines, but with a unique visual flair:
+
+* **Interactive Animation:** Each bubble features eyes that track your touch across the screen. When idle, the bubbles perform a continuous "wobble" and bounce whenever they lock into place.
+* **Accessibility Features:** Despite the visual complexity, the game remains fully accessible. A "Reduce Motion" mode disables the wobble and bounce while maintaining the eye-tracking feature. It also includes an Okabe-Ito colorblind-safe palette, high-contrast settings, and toggleable haptics.
+* **Intuitive Controls:** Designed for mobile first, the interface is large and responsive, ensuring a comfortable experience on any device.
+
+## The Development Process
+
+Like my previous work, this project was built through an AI-assisted development workflow. My role as the Technical Program Manager and developer was to take the core engine—which governs collision, scoring, and logic—and successfully layer a new visual engine on top of it.
+
+By leveraging my children as my core testing team, I was able to refine the feel of the "jelly" physics and ensure the eye-tracking responsiveness met their expectations for fun. This iterative process allowed me to maintain the BKAOS standard of quality while learning how to effectively repurpose modular code across different projects.
+
+## Why a PWA?
+
+I prioritized the PWA model to ensure the game is immediately available to my family and users without the friction of traditional app stores.
+
+* **Zero-Friction Access:** Users can launch the game via a web link. There are no accounts to manage and no download queues.
+* **Rapid Updates:** This delivery method allows me to iterate on the game mechanics and visual animations and deploy those updates instantly.
+* **Privacy and Performance:** The game contains no trackers, ad SDKs, or external font dependencies. It is built entirely with vanilla HTML, CSS, and JavaScript, creating a lightweight experience that remains fully functional offline.
+
+## Technical Implementation
+
+Squishy relies on the same robust technical foundation as my previous PWA titles, using the Canvas API for all rendering and the Web Audio and Vibration APIs for feedback.
+
+A key technical challenge was decoupling the visual rendering from the game logic. I updated the shared rendering function (`drawBlock`) to map game grid coordinates to the new jelly-bubble assets. Additionally, I implemented coordinate transformation to map screen-space touch data into canvas-internal pixel space, which allows the "eyes" of the bubbles to follow a player's finger with precision regardless of screen scaling or device resolution.
+
+## Deployment and Local Use
+
+This project is hosted via GitHub Pages and is fully installable as a native-feeling app.
+
+1. **Mobile:** Navigate to the game link in your browser, then select "Add to Home Screen" from your browser’s menu.
+2. **Desktop:** Select the "Install" icon in your browser’s address bar.
+
+For those interested in the source code, you can run the project locally by executing `npx serve .` in your terminal. Note that a local server is required to trigger the service worker and offline functionality.
+
+---
+
+*Squishy is a BKAOS project.*
