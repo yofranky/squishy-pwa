@@ -531,8 +531,169 @@ const GO_MESSAGES = [
 const SAFE_COLORS = ['#E69F00','#56B4E9','#009E73','#F0E442','#CC79A7'];
 
 /* =========================================================
-   ACCESSIBILITY SETTINGS — persisted locally, nothing tracked
-   ========================================================= */
+    ACHIEVEMENTS — meaningful milestones, not grind-y busywork
+    ========================================================= */
+const ACHIEVEMENTS = [
+  { id:'first_game',     name:'First Squish',    desc:'Play your first game',              icon:'🎮' },
+  { id:'first_tetris',   name:'Tetris!',         desc:'Clear 4 lines at once',             icon:'🔲' },
+  { id:'score_1000',     name:'Getting Good',    desc:'Score 1,000 points',                icon:'💯' },
+  { id:'score_5000',     name:'Squish Master',   desc:'Score 5,000 points',                icon:'🏆' },
+  { id:'combo_3',        name:'Combo Starter',   desc:'Get a 3x combo',                    icon:'🔥' },
+  { id:'combo_5',        name:'Combo King',      desc:'Get a 5x combo',                    icon:'👑' },
+  { id:'lines_100',      name:'Line Closer',     desc:'Clear 100 lines total',             icon:'📏' },
+  { id:'lines_500',      name:'Line Legend',     desc:'Clear 500 lines total',             icon:'📏' },
+  { id:'games_10',       name:'Regular',         desc:'Play 10 games',                     icon:'📅' },
+  { id:'games_50',       name:'Addict',          desc:'Play 50 games',                     icon:'🕹️' },
+  { id:'level_10',       name:'Level Up',        desc:'Reach level 10',                    icon:'⬆️' },
+  { id:'daily_7',        name:'Daily Grinder',   desc:'Complete 7 daily challenges',       icon:'📆' },
+  { id:'time_attack',    name:'Speed Demon',     desc:'Play Time Attack mode',             icon:'⏱️' },
+  { id:'all_clear',      name:'Perfect Clear',   desc:'Clear the entire board',            icon:'✨' }
+];
+
+const Achievements = {
+  unlocked: new Set(),
+  load(){
+    try{ const saved = JSON.parse(localStorage.getItem('squishy_achievements')||'[]'); saved.forEach(id=>this.unlocked.add(id)); }catch(e){}
+  },
+  save(){ try{ localStorage.setItem('squishy_achievements', JSON.stringify([...this.unlocked])); }catch(e){} },
+  isUnlocked(id){ return this.unlocked.has(id); },
+  unlock(id){
+    if(this.unlocked.has(id)) return false;
+    this.unlocked.add(id);
+    this.save();
+    return true;
+  },
+  checkAll(){
+    const newlyUnlocked = [];
+    ACHIEVEMENTS.forEach(a => {
+      if(!this.unlocked.has(a.id) && this._checkCondition(a.id)){
+        this.unlocked.add(a.id);
+        newlyUnlocked.push(a);
+      }
+    });
+    if(newlyUnlocked.length > 0) this.save();
+    return newlyUnlocked;
+  },
+  _checkCondition(id){
+    const s = Stats.data;
+    switch(id){
+      case 'first_game':     return s.gamesPlayed >= 1;
+      case 'first_tetris':   return s.biggestTetris >= 4;
+      case 'score_1000':     return s.highScore >= 1000;
+      case 'score_5000':     return s.highScore >= 5000;
+      case 'combo_3':        return s.biggestCombo >= 3;
+      case 'combo_5':        return s.biggestCombo >= 5;
+      case 'lines_100':      return s.totalLines >= 100;
+      case 'lines_500':      return s.totalLines >= 500;
+      case 'games_10':       return s.gamesPlayed >= 10;
+      case 'games_50':       return s.gamesPlayed >= 50;
+      case 'level_10':       return s.level >= 10;
+      case 'daily_7':        return s.dailyChallengesCompleted >= 7;
+      case 'time_attack':    return s.timeAttackHighScore > 0;
+      case 'all_clear':      return s.allClears >= 1;
+      default: return false;
+    }
+  }
+};
+
+/* =========================================================
+    STATS — track everything, show it off
+    ========================================================= */
+const Stats = {
+  data: {
+    gamesPlayed: 0,
+    totalLines: 0,
+    totalPieces: 0,
+    biggestCombo: 0,
+    biggestTetris: 0,
+    highScore: 0,
+    totalPlayTime: 0,
+    dailyChallengesCompleted: 0,
+    timeAttackHighScore: 0,
+    allClears: 0,
+    xp: 0,
+    level: 1
+  },
+  load(){
+    try{ const saved = JSON.parse(localStorage.getItem('squishy_stats')||'null'); if(saved) Object.assign(this.data, saved); }catch(e){}
+  },
+  save(){ try{ localStorage.setItem('squishy_stats', JSON.stringify(this.data)); }catch(e){} },
+  addXP(amount){
+    this.data.xp += amount;
+    const newLevel = 1 + Math.floor(this.data.xp / 1000);
+    if(newLevel > this.data.level){
+      this.data.level = newLevel;
+      this.save();
+      return newLevel;
+    }
+    this.save();
+    return null;
+  }
+};
+
+/* =========================================================
+    DAILY CHALLENGE — one fresh challenge per day
+    ========================================================= */
+const DAILY_CHALLENGES = [
+  { id:'lines_10',     name:'Clear 10 lines',           desc:'Clear 10 lines in a single game',           type:'lines',   target:10 },
+  { id:'score_3000',   name:'Score 3,000',              desc:'Score 3,000 points in a single game',         type:'score',   target:3000 },
+  { id:'combo_3',      name:'3x Combo',                 desc:'Get a 3x combo in a single game',             type:'combo',   target:3 },
+  { id:'tetris_2',     name:'Double Tetris',            desc:'Clear 2 Tetris clears in a single game',      type:'tetris',  target:2 },
+  { id:'play_120',     name:'Last 2 Minutes',           desc:'Survive for 2 minutes without game over',     type:'survive', target:120 },
+  { id:'lines_20',     name:'Clear 20 lines',           desc:'Clear 20 lines in a single game',             type:'lines',   target:20 },
+  { id:'score_5000',   name:'Score 5,000',              desc:'Score 5,000 points in a single game',         type:'score',   target:5000 },
+  { id:'combo_4',      name:'4x Combo',                 desc:'Get a 4x combo in a single game',             type:'combo',   target:4 },
+  { id:'tetris_1',     name:'Tetris!',                  desc:'Clear a Tetris in a single game',             type:'tetris',  target:1 },
+  { id:'lines_15',     name:'Clear 15 lines',           desc:'Clear 15 lines in a single game',             type:'lines',   target:15 },
+  { id:'score_2000',   name:'Score 2,000',              desc:'Score 2,000 points in a single game',         type:'score',   target:2000 },
+  { id:'combo_2',      name:'Double Combo',             desc:'Get a 2x combo in a single game',             type:'combo',   target:2 },
+  { id:'play_60',      name:'Last 1 Minute',            desc:'Survive for 1 minute without game over',      type:'survive', target:60 },
+  { id:'lines_30',     name:'Clear 30 lines',           desc:'Clear 30 lines in a single game',             type:'lines',   target:30 },
+  { id:'score_10000',  name:'Score 10,000',             desc:'Score 10,000 points in a single game',        type:'score',   target:10000 },
+  { id:'tetris_3',     name:'Triple Tetris',            desc:'Clear 3 Tetris clears in a single game',      type:'tetris',  target:3 }
+];
+
+const DailyChallenge = {
+  current: null,
+  todayKey: null,
+  load(){
+    const today = new Date().toISOString().slice(0,10);
+    this.todayKey = 'squishy_daily_' + today;
+    const saved = localStorage.getItem(this.todayKey);
+    if(saved){
+      this.current = JSON.parse(saved);
+    } else {
+      // Deterministic challenge based on date
+      const dayNum = Math.floor(new Date(today).getTime() / 86400000);
+      const challenge = DAILY_CHALLENGES[dayNum % DAILY_CHALLENGES.length];
+      this.current = { ...challenge, completed: false, progress: 0 };
+      localStorage.setItem(this.todayKey, JSON.stringify(this.current));
+    }
+  },
+  updateProgress(type, value){
+    if(!this.current || this.current.completed) return false;
+    if(this.current.type !== type) return false;
+    this.current.progress = Math.max(this.current.progress, value);
+    if(this.current.progress >= this.current.target){
+      this.current.completed = true;
+      localStorage.setItem(this.todayKey, JSON.stringify(this.current));
+      Stats.data.dailyChallengesCompleted++;
+      Stats.save();
+      Achievements.checkAll();
+      return true; // completed!
+    }
+    localStorage.setItem(this.todayKey, JSON.stringify(this.current));
+    return false;
+  },
+  reset(){
+    this.current = null;
+    this.load();
+  }
+};
+
+/* =========================================================
+    ACCESSIBILITY SETTINGS — persisted locally, nothing tracked
+    ========================================================= */
 const Settings = {
   data: {
     sound: true,
@@ -555,12 +716,14 @@ const Settings = {
   }
 };
 
+
 function announce(text){
   const el = document.getElementById('sr-announcer');
   if(!el) return;
   el.textContent = '';
   requestAnimationFrame(()=>{ el.textContent = text; });
 }
+
 
 /* =========================================================
    TINY SOUND ENGINE (Web Audio, no files needed)
@@ -755,10 +918,13 @@ class GameEngine{
     this.bag = this.makeBag();
     this.active = this.spawn();
     this.nextPiece = this.spawn(true);
+    this.gameStartTime = performance.now();
+    this.tetrisCount = 0;
     document.getElementById('score-val').innerText = '0';
     document.getElementById('level-val').innerText = '1';
     this.drawNext();
   }
+
 
   activeShapes(){
     return SHAPE_SETS[Settings.data.shapeChaos] || SHAPES;
@@ -890,6 +1056,8 @@ class GameEngine{
     // Track combo: consecutive line clears
     this.comboCount = (this.comboCount || 0) + 1;
     const combo = this.comboCount;
+    if(n >= 4) this.tetrisCount = (this.tetrisCount || 0) + 1;
+
 
     sound.clear(n);
     vibrate(n>=4 ? 60 : 30);
@@ -965,6 +1133,42 @@ class GameEngine{
     this.highScores.sort((a,b)=>b-a);
     this.highScores = this.highScores.slice(0,5);
     localStorage.setItem('squishy_scores', JSON.stringify(this.highScores));
+
+    // --- Stats & progression tracking ---
+    const s = Stats.data;
+    s.gamesPlayed++;
+    s.totalLines += this.linesCleared || 0;
+    s.biggestCombo = Math.max(s.biggestCombo, this.comboCount || 0);
+    s.biggestTetris = Math.max(s.biggestTetris, this.tetrisCount || 0);
+    s.highScore = Math.max(s.highScore, this.score);
+    if(this.gameStartTime) s.totalPlayTime += Math.round((performance.now() - this.gameStartTime)/1000);
+    const xpGained = Math.floor(this.score/10) + (this.linesCleared||0)*5;
+    const leveledUp = Stats.addXP(xpGained);
+    if(leveledUp) spawnFloatText(`⬆️ LEVEL ${leveledUp}!`, false, '#FFD700');
+    Stats.save();
+
+    // Daily challenge progress
+    if(DailyChallenge.current){
+      if(this.linesCleared) DailyChallenge.updateProgress('lines', this.linesCleared);
+      if(this.score) DailyChallenge.updateProgress('score', this.score);
+      if(this.comboCount) DailyChallenge.updateProgress('combo', this.comboCount);
+      if(this.tetrisCount) DailyChallenge.updateProgress('tetris', this.tetrisCount);
+      if(this.gameStartTime){
+        const secs = Math.round((performance.now() - this.gameStartTime)/1000);
+        DailyChallenge.updateProgress('survive', secs);
+      }
+    }
+
+    // Check achievements
+    const newlyUnlocked = Achievements.checkAll();
+    if(newlyUnlocked.length > 0){
+      setTimeout(()=>{
+        newlyUnlocked.forEach(a=>{
+          spawnFloatText(`${a.icon} ${a.name}!`, false, '#FFD700');
+        });
+      }, 600);
+    }
+
     document.getElementById('final-score').innerText = this.score;
     document.getElementById('go-message').innerText = GO_MESSAGES[Math.floor(Math.random()*GO_MESSAGES.length)];
     document.getElementById('new-best').classList.toggle('hidden', !(isNewBest && this.score>0));
@@ -972,6 +1176,7 @@ class GameEngine{
     drawGameOverMascot();
     ui.show('gameover');
   }
+
 
   animate(t=0){
     if(this.isPaused||this.isGameOver) return;
@@ -1504,11 +1709,15 @@ function bindSettingsUI(){
    ========================================================= */
 Settings.load();
 Settings.apply();
+Stats.load();
+Achievements.load();
+DailyChallenge.load();
 bindSettingsUI();
 const game = new GameEngine();
 ui.initSplash();
 ui.buildMainMenu();
 ui.show('main');
+
 
 // Register service worker for offline support + installability.
 // Wrapped defensively: if this file is opened via file:// (no HTTPS), SW
